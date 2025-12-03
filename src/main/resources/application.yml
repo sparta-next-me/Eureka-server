@@ -1,0 +1,39 @@
+server:
+  port: 3150
+
+spring:
+  application:
+    name: eureka-server
+
+eureka:
+  instance:
+    prefer-ip-address: false
+    hostname: localhost
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: refresh,health,info,prometheus,metrics
+#  endpoint:
+#    prometheus:
+#      enabled: true
+#    metrics:
+#      enabled: true
+#      export:
+#        prometheus:
+#          enabled: true
+#      tags:
+#        application: ${spring.application.name}
+#
+#  zipkin:
+#    tracing:
+#      endpoint: "https://zipkin.code-factory.co.kr/api/v2/spans"
+#  tracing:
+#    sampling:
+#      probability: 1.0
