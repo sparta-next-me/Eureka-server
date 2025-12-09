@@ -15,26 +15,26 @@ eureka:
     service-url:
       defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
 
-#
-#management:
-#  endpoints:
-#    web:
-#      exposure:
-#        include: refresh,health,info,prometheus,metrics
-#  endpoint:
-#    prometheus:
-#      enabled: true
-#    metrics:
-#      enabled: true
-#      export:
-#        prometheus:
-#          enabled: true
-#      tags:
-#        application: ${spring.application.name}
-#
-#  zipkin:
-#    tracing:
-#      endpoint: "https://zipkin.code-factory.co.kr/api/v2/spans"
-#  tracing:
-#    sampling:
-#      probability: 1.0
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh,health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      enabled: true
+    metrics:
+      enabled: true
+      export:
+        prometheus:
+          enabled: true
+      tags:
+        application: ${spring.application.name}
+
+  zipkin:
+    tracing:
+      endpoint: "http://34.22.87.75:9500/api/v2/spans"
+  tracing:
+    sampling:
+      probability: 1.0
