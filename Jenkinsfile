@@ -44,7 +44,7 @@ pipeline {
             steps {
                 withCredentials([
                     usernamePassword(
-                        credentialsId: 'ghcr-credentials',   // Jenkins에 미리 만들어 둘 크리덴셜 ID
+                        credentialsId: 'ghcr-credential',   // Jenkins에 미리 만들어 둘 크리덴셜 ID
                         usernameVariable: 'REGISTRY_USER',
                         passwordVariable: 'REGISTRY_TOKEN'
                     )
