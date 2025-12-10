@@ -8,9 +8,10 @@ pipeline {
         //IMAGE_NAME      = "eureka-server"
 
         // 레지스트리에 올릴 풀네임
-        IMAGE_NAME      = "ghcr.io/nextme/eureka-server"
-        IMAGE_TAG       = "latest"
-        FULL_IMAGE      = "${IMAGE_NAME}:${IMAGE_TAG}"
+        REGISTRY        = "ghcr.io"
+        GH_OWNER        = "sparta-next-me"
+        IMAGE_REPO      = "eureka-server"
+        FULL_IMAGE      = "${REGISTRY}/${GH_OWNER}/${IMAGE_REPO}:latest"
 
         CONTAINER_NAME  = "eureka-server"
         HOST_PORT       = "3150"
