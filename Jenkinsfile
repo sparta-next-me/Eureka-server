@@ -24,12 +24,15 @@ pipeline {
             }
         }
 
-        stage('Build & Test') {
-            steps {
-                sh './gradlew clean test'
-                sh './gradlew bootJar'
-            }
-        }
+     stage('Build & Test') {
+         steps {
+             sh '''
+               ./gradlew clean test --no-daemon
+               ./gradlew bootJar --no-daemon
+             '''
+         }
+     }
+
 
         stage('Docker Build') {
             steps {
