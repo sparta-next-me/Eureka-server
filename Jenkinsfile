@@ -62,21 +62,36 @@ pipeline {
         }
 
         //  지금은 EC2에 바로 띄우는 단계 (나중에 K8s 가면 이거만 교체 예정)
-        stage('Deploy') {
+        stage('Deploy to K8s') {
             steps {
-                sh """
-                  # 기존 컨테이너 있으면 정지+삭제
-                  if [ \$(docker ps -aq -f name=${CONTAINER_NAME}) ]; then
-                    docker stop ${CONTAINER_NAME} || true
-                    docker rm ${CONTAINER_NAME} || true
+                // 1) kubectl 설치 (없으면)
+                sh '''
+                  if ! command -v kubectl >/dev/null 2>&1; then
+                    echo "kubectl not found. installing..."
+                    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                    chmod +x kubectl
+                    mv kubectl /usr/local/bin/kubectl
                   fi
+                '''
 
-                  # 새 컨테이너 실행 (레지스트리에서 받아온 이미지로도 가능)
-                  docker run -d --name ${CONTAINER_NAME} \\
-                    -p ${HOST_PORT}:${CONTAINER_PORT} \\
-                    ${FULL_IMAGE}
-                """
+                // 2) k3s kubeconfig 사용해서 배포
+                withCredentials([
+                    file(credentialsId: 'k3s-kubeconfig', variable: 'KUBECONFIG_FILE')
+                ]) {
+                    sh '''
+                      export KUBECONFIG=${KUBECONFIG_FILE}
+
+                      echo "Applying eureka-server manifest to k3s..."
+                      kubectl apply -f eureka-server.yaml -n next-me
+
+                      echo "Rollout status for eureka-server:"
+                      kubectl rollout status deployment/eureka-server -n next-me || true
+
+                      echo "Current eureka-server pods:"
+                      kubectl get pods -n next-me -l app=eureka-server
+                    '''
+                }
             }
         }
-    }
+
 }
