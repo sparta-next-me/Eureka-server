@@ -47,4 +47,5 @@ spec:
     - name: http
       port: 3150
       targetPort: 3150
+      nodePort: 30150
   type: ClusterIP
