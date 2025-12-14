@@ -43,9 +43,11 @@ metadata:
 spec:
   selector:
     app: eureka-server
+  type: NodePort
   ports:
     - name: http
+      protocol: TCP
       port: 3150
       targetPort: 3150
       nodePort: 30150
-  type: ClusterIP
+
