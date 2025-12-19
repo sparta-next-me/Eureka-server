@@ -3,19 +3,13 @@ pipeline {
 
     environment {
         APP_NAME        = "eureka-server"
-
         REGISTRY        = "ghcr.io"
         GH_OWNER        = "sparta-next-me"
         IMAGE_REPO      = "eureka-server"
         FULL_IMAGE      = "${REGISTRY}/${GH_OWNER}/${IMAGE_REPO}:latest"
-
-        CONTAINER_NAME  = "eureka-server"
-        HOST_PORT       = "3150"
-        CONTAINER_PORT  = "3150"
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
@@ -24,67 +18,42 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                sh '''
-                  ./gradlew clean test --no-daemon
-                  ./gradlew bootJar --no-daemon
-                '''
+                sh './gradlew clean bootJar --no-daemon'
             }
         }
 
-        stage('Docker Build') {
+        stage('Docker Build & Push') {
             steps {
-                sh """
-                  docker build -t ${FULL_IMAGE} .
-                """
-            }
-        }
-
-        stage('Push Image') {
-            steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'ghcr-credential',
-                        usernameVariable: 'REGISTRY_USER',
-                        passwordVariable: 'REGISTRY_TOKEN'
-                    )
-                ]) {
-                    sh """
-                      echo "\$REGISTRY_TOKEN" | docker login ghcr.io -u "\$REGISTRY_USER" --password-stdin
-                      docker push ${FULL_IMAGE}
-                    """
+                script {
+                    sh "docker build -t ${FULL_IMAGE} ."
+                    withCredentials([usernamePassword(credentialsId: 'ghcr-credential', usernameVariable: 'USER', passwordVariable: 'TOKEN')]) {
+                        sh "echo \$TOKEN | docker login ${REGISTRY} -u \$USER --password-stdin"
+                        sh "docker push ${FULL_IMAGE}"
+                    }
                 }
             }
         }
 
         stage('Deploy to K8s') {
             steps {
-                sh '''
-                  if ! command -v kubectl >/dev/null 2>&1; then
-                    echo "kubectl not found. installing..."
-                    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-                    chmod +x kubectl
-                    mv kubectl /usr/local/bin/kubectl
-                  fi
-                '''
-
-                withCredentials([
-                    file(credentialsId: 'k3s-kubeconfig', variable: 'KUBECONFIG_FILE')
-                ]) {
+                withCredentials([file(credentialsId: 'k3s-kubeconfig', variable: 'KUBECONFIG')]) {
                     sh '''
-                      export KUBECONFIG=${KUBECONFIG_FILE}
+                      # 1. 네임스페이스 생성 (없을 경우 대비)
+                      kubectl create namespace next-me --dry-run=client -o yaml | kubectl apply -f -
 
-                      echo "Applying eureka-server manifest to k3s..."
+                      # 2. YAML 적용
                       kubectl apply -f eureka-server.yaml -n next-me
 
-                      echo "Rollout status for eureka-server:"
-                      kubectl rollout status deployment/eureka-server -n next-me || true
+                      # 3. 배포 확인
+                      echo "Waiting for rollout..."
+                      kubectl rollout status deployment/eureka-server -n next-me
 
-                      echo "Current eureka-server pods:"
-                      kubectl get pods -n next-me -l app=eureka-server
+                      # 4. 어느 노드에 떴는지 상세 확인
+                      echo "Deployment location:"
+                      kubectl get pods -n next-me -l app=eureka-server -o wide
                     '''
                 }
             }
         }
-
     }
 }

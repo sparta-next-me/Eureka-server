@@ -6,7 +6,7 @@ metadata:
   labels:
     app: eureka-server
 spec:
-  replicas: 1
+  replicas: 2  # 고가용성을 위해 2대로 증설 (app, infra 노드에 나눠짐)
   selector:
     matchLabels:
       app: eureka-server
@@ -15,6 +15,17 @@ spec:
       labels:
         app: eureka-server
     spec:
+      # [추가] 두 노드(app, infra)에 골고루 배포되도록 강제하는 설정
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - eureka-server
+              topologyKey: "kubernetes.io/hostname"
       imagePullSecrets:
         - name: ghcr-cred
       containers:
@@ -22,7 +33,7 @@ spec:
           image: ghcr.io/sparta-next-me/eureka-server:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 3150
+            - containerPort: 3150 # 컨테이너 내부 포트는 유지
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "prod"
@@ -47,7 +58,6 @@ spec:
   ports:
     - name: http
       protocol: TCP
-      port: 3150
-      targetPort: 3150
-      nodePort: 30150
-
+      port: 3151       # [수정] 쿠버네티스 내부 서비스 포트 (도커 3150과 충돌 방지)
+      targetPort: 3150 # 컨테이너 내부 3150으로 전달
+      nodePort: 30151  # [수정] 외부 IP:30151로 접속 가능
